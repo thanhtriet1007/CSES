@@ -13,43 +13,72 @@ const long long INF     = 1e18 + 7;
 const long long MOD    = 1e9 + 7;
 
 int n, q;
-int a[N]; 
+int a[N];
 
-set<int>st[N * 4];
+int st[N * 4];
 
 void update(int id, int l, int r, int pos, int val) {
     if (l > pos || r < pos) return;
     if (l == r) {
-        st[id].insert(val);
+        st[id] += val;
         return;
     }
 
     int mid = (l + r) >> 1;
     update(id * 2, l, mid, pos, val);
     update(id * 2 + 1, mid + 1, r, pos, val);
-    for (auto x : st[id * 2]) st[id].insert(x);
-    for (auto x : st[id * 2 + 1]) st[id].insert(x);
+    st[id] = st[id * 2] + st[id * 2 + 1];
 }
 
-set<int> get(int id, int l, int r, int u, int v) {
-    if (l > v || r < u) return {};
+int get(int id, int l, int r, int u, int v) {
+    if (l > v || r < u) return 0;
     if (l >= u && r <= v) return st[id];
     int mid = (l + r) >> 1;
-    set<int> res;
-    for (auto x : get(id * 2, l, mid, u, v)) res.insert(x);
-    for (auto x : get(id * 2 + 1, mid + 1, r, u, v)) res.insert(x);
-    return res;
+    return get(id * 2, l, mid, u, v) + get(id * 2 + 1, mid + 1, r, u, v);
 }
+
+struct query {
+    int l, r, id;
+};
+
+map<int, int>lst;
+
+query Queries[N];
+int ans[N];
 
 void solve() {
     //World Final when?
     cin >> n >> q;
     for (int i = 1; i <= n; ++i) cin >> a[i];
-    for (int i = 1; i <= n; ++i) update(1, 1, n, i, a[i]);
 
-    while (q--) {
-        int l, r; cin >> l >> r;
-        cout << get(1,1,n,l,r).size() << endl;
+    for (int i = 1; i <= q; ++i) {
+        cin >> Queries[i].l >> Queries[i].r;
+        Queries[i].id = i;  
+    }
+
+    sort(Queries + 1, Queries + q + 1, [](query a, query b) {
+        return a.r < b.r;
+    });
+
+    int j = 0;
+
+    for (int i = 1; i <= n; ++i) {
+        if (lst[a[i]] == 0) {
+            lst[a[i]] = i;
+            update(1, 1, n, i, 1);
+        } else {
+            update(1, 1, n, lst[a[i]], -1);
+            lst[a[i]] = i;
+            update(1, 1, n, i, 1);
+        }
+        while (j + 1 <= q && Queries[j + 1].r == i) {
+            ans[Queries[j + 1].id] = get(1, 1, n, Queries[j + 1].l, Queries[j + 1].r);
+            j++;
+        }
+    }
+
+    for (int i = 1; i <= q; ++i) {
+        cout << ans[i] << endl;
     }
 }
 
